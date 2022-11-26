@@ -1,0 +1,4 @@
+install notes
+
+python 3.10.7
+pip install brotli
