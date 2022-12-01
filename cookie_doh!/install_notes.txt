@@ -1,4 +1,11 @@
 install notes
 
 python 3.10.7
-pip install brotli
+
+Different approach 11/28/2022: 
+mitmproxy.org: open source Man in the Middle Proxy Server
+
+helpful for better command line rendering: Windows Terminal (from the app store)
+
+# install python module for mitmproxy to interface with mitmproxy API
+pip install mitmproxy
