@@ -23,11 +23,13 @@ def response(flow):
     metadata += flow.request.http_version + "\t"
 
     for k, v in flow.request.headers.items():
-        my_file.write(metadata)
-        my_file.write("Request" + "\t")
-        my_file.write(k.upper() + "\t" + v + "\n")
+        if (k.upper() == "COOKIE" or k.upper() == "SET-COOKIE"):
+            my_file.write(metadata)
+            my_file.write("Request" + "\t")
+            my_file.write(k.upper() + "\t" + v + "\n")
 
     for k, v in flow.response.headers.items():
-        my_file.write(metadata)
-        my_file.write("Response" + "\t")
-        my_file.write(k.upper() + "\t" + v + "\n")
+        if (k.upper() == "COOKIE" or k.upper() == "SET-COOKIE"):
+            my_file.write(metadata)
+            my_file.write("Response" + "\t")
+            my_file.write(k.upper() + "\t" + v + "\n")
