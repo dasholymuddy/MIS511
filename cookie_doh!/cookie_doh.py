@@ -1,8 +1,14 @@
 from datetime import datetime
 from mitmproxy import http
 from mitmproxy.http import Headers
+from sys import argv
 
-flow = http.HTTPFlow
+# configurable variable: allow_cookies
+# set allow_cookies to True to permit cookies to pass between client and server after logging cookie traffic.
+# set allow_cookies to False to scrub cookies from request and response after logging attempted cookie traffic.
+allow_cookies = False
+
+# file logging config elements
 log_path = "header_log.txt"
 my_file = open(log_path, "w")
 my_file.write("Date" + "\t" + "Time" + "\t" + "URL" + "\t" + "Host" +
@@ -10,7 +16,13 @@ my_file.write("Date" + "\t" + "Time" + "\t" + "URL" + "\t" + "Host" +
               "\t" + "HTTP Version" + "\t" + "Type" + "\t" + "Header" +
               "\t" + "Content" + "\n")
 
+# instantiates the mitmproxy.http.HTTPFlow object we'll be iterating in def response(flow)
+flow = http.HTTPFlow
 
+
+# utility functions
+
+# unpack cookie data; we need to handle cases where cookies aren't RFC 6265 compliant
 def unpack_cookie(cookie):
     if ("=" in cookie):
         try:
@@ -23,6 +35,8 @@ def unpack_cookie(cookie):
         (name, value) = cookie, ""
 
     return (name, value)
+
+# unpack set-cookie name/value pair data; we need to handle cases where cookies aren't RFC 6265 compliant
 
 
 def unpack_pair(pair):
@@ -49,6 +63,7 @@ def clean_cookies(cookies):
 # clean out messy data that creates errors
 
 
+# oddly, set-cookies have \n and commas in the exires-date, so we need to handle those conditions for better logging
 def clean_set_cookies(cookies):
 
     # some cookies have line returns in them that mess up the data
@@ -74,11 +89,18 @@ def clean_set_cookies(cookies):
     return clean_cookies
 
 
+# cloe the file when flow is done
+def done():
+    my_file.close()
+
+
+# this is the main logic, which iterates over the flow
 def response(flow):
     dt = datetime.now()
     the_date = dt.strftime("%m/%d/%Y")
     the_time = dt.strftime("%H:%M:%S")
 
+    # set up metadata lot record with each entry
     metadata = the_date + "\t"
     metadata += the_time + "\t"
     metadata += flow.request.url + "\t"
@@ -88,6 +110,7 @@ def response(flow):
     metadata += flow.request.path + "\t"
     metadata += flow.request.http_version + "\t"
 
+    # parse the request headers (from client to server)
     for k, v in flow.request.headers.items():
         if (k.upper() == "COOKIE"):
             my_file.write(metadata)
@@ -112,6 +135,11 @@ def response(flow):
                 my_file.write(name + "\t" + value + "\t")
             my_file.write("\n")
 
+    # blow away outbound cookies after logging attempted Cookie traffic
+    if (not allow_cookies):
+        flow.request.headers.set_all("Cookie", "")
+
+    # parse the response headers (from server to client)
     for k, v in flow.response.headers.items():
         if (k.upper() == "SET-COOKIE"):
             my_file.write(metadata)
@@ -134,3 +162,7 @@ def response(flow):
                     else:
                         my_file.write(set_pair_tuple + "\t" + "" + "\t")
             my_file.write("\n")
+
+    # blow away inbound cookies after logging attempted Set-cookie headers
+    if (not allow_cookies):
+        flow.response.headers.set_all("Set-Cookie", "")
