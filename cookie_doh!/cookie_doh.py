@@ -36,9 +36,8 @@ def unpack_cookie(cookie):
 
     return (name, value)
 
+
 # unpack set-cookie name/value pair data; we need to handle cases where cookies aren't RFC 6265 compliant
-
-
 def unpack_pair(pair):
     if ("=" in pair):
         try:
