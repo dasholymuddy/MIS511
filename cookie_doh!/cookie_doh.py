@@ -1,7 +1,6 @@
 from datetime import datetime
 from mitmproxy import http
 from mitmproxy.http import Headers
-from sys import argv
 
 # configurable variable: allow_cookies
 # set allow_cookies to True to permit cookies to pass between client and server after logging cookie traffic.
