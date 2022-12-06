@@ -5,7 +5,7 @@ from mitmproxy.http import Headers
 # configurable variable: allow_cookies
 # set allow_cookies to True to permit cookies to pass between client and server after logging cookie traffic.
 # set allow_cookies to False to scrub cookies from request and response after logging attempted cookie traffic.
-allow_cookies = False
+allow_cookies = True
 
 # file logging config elements
 log_path = "header_log.txt"
