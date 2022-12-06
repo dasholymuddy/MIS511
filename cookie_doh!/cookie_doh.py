@@ -63,7 +63,7 @@ def clean_cookies(cookies):
 # clean out messy data that creates errors
 
 
-# oddly, set-cookies have \n and commas in the exires-date, so we need to handle those conditions for better logging
+# set-cookie values may have \n and commas in the expires-date, so we need to handle those conditions for better logging
 def clean_set_cookies(cookies):
 
     # some cookies have line returns in them that mess up the data
