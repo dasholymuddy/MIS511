@@ -13,8 +13,8 @@ log_path = "header_log.txt"
 my_file = open(log_path, "w")
 my_file.write("Date" + "\t" + "Time" + "\t" + "URL" + "\t" + "Host" +
               "\t" + "Port" + "\t" + "Request Method" + "\t" + "Path" +
-              "\t" + "HTTP Version" + "\t" + "Type" + "\t" + "Header" +
-              "\t" + "Content" + "\n")
+              "\t" + "HTTP Version" + "\t" + "Type" + "\t" + "Allow Cookies" +
+              "\t" + "Header" + "\t" + "Content" + "\n")
 
 # instantiates the mitmproxy.http.HTTPFlow object we'll be iterating in def response(flow)
 flow = http.HTTPFlow
@@ -115,6 +115,7 @@ def response(flow):
         if (k.upper() == "COOKIE"):
             my_file.write(metadata)
             my_file.write("Request" + "\t")
+            my_file.write(str(allow_cookies) + "\t")
 
             v_clean = clean_cookies(v)
 
@@ -144,6 +145,7 @@ def response(flow):
         if (k.upper() == "SET-COOKIE"):
             my_file.write(metadata)
             my_file.write("Response" + "\t")
+            my_file.write(str(allow_cookies) + "\t")
 
             the_set_cookies = clean_set_cookies(v)
 
