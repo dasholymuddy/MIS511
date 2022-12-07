@@ -87,7 +87,7 @@ def clean_set_cookies(cookies):
     return clean_cookies
 
 
-# cloe the file when flow is done
+# close the file when flow is done
 def done():
     my_file.close()
 
