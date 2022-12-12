@@ -1,11 +1,18 @@
 from datetime import datetime
 from mitmproxy import http
 from mitmproxy.http import Headers
+import random
 
 # configurable variable: allow_cookies
-# set allow_cookies to True to permit cookies to pass between client and server after logging cookie traffic.
+# set allow_cookies to True to permit cookies to pass between client and server after logging cookie traffic. (Default)
 # set allow_cookies to False to scrub cookies from request and response after logging attempted cookie traffic.
 allow_cookies = True
+
+# configurable variable: corrupt_ga_client_id
+# set corrupt_ga_client_id to True to randomly alter cookies values that look like Google Analytics Client IDs
+# set corrupt_ga_client_id to False to pass Google Analytics Client IDs without modification (Default)
+corrupt_ga_client_id = True
+
 
 # file logging config elements
 log_path = "header_log.txt"
@@ -13,13 +20,44 @@ my_file = open(log_path, "w")
 my_file.write("Date" + "\t" + "Time" + "\t" + "URL" + "\t" + "Host" +
               "\t" + "Port" + "\t" + "Request Method" + "\t" + "Path" +
               "\t" + "HTTP Version" + "\t" + "Type" + "\t" + "Allow Cookies" +
-              "\t" + "Header" + "\t" + "Content" + "\n")
+              "\t" + "Corrupt GA Cookies" + "\t" + "Header" + "\t" + "Content" + "\n")
 
 # instantiates the mitmproxy.http.HTTPFlow object we'll be iterating in def response(flow)
 flow = http.HTTPFlow
 
 
 # utility functions
+
+# corrupt Google Analytics Client IDs
+def modify_cookie_value(corrupt_ga_client_id, src):
+    if (corrupt_ga_client_id):
+
+        new_str = ""
+        substrings = src.split(".")
+
+        # Google Analytics GA1 cookie
+        if (src[0:4] == "GA1."):
+            for substr in substrings:
+                if (len(substr) > 4):
+                    new_substr = ""
+                    for char in substr:
+                        if (char.isdigit() and random.choice([True, False])):
+                            new_substr += str(random.randrange(0, 9, 1))
+                        else:
+                            new_substr += char
+                    new_str += new_substr
+                else:
+                    new_str += substr
+                new_str += "."
+            new_str = new_str[0:len(new_str)-1]
+
+        # if not a recognized pattern, just pass the original value
+        else:
+            new_str = src
+        return new_str
+    else:
+        return src
+
 
 # unpack cookie data; we need to handle cases where cookies aren't RFC 6265 compliant
 def unpack_cookie(cookie):
@@ -114,8 +152,10 @@ def response(flow):
             my_file.write(metadata)
             my_file.write("Request" + "\t")
             my_file.write(str(allow_cookies) + "\t")
+            my_file.write(str(corrupt_ga_client_id) + "\t")
 
             v_clean = clean_cookies(v)
+            new_cookies = ""
 
             # write cookie name and raw cookie value
             my_file.write(k.upper() + "\t" + v_clean + "\t")
@@ -126,12 +166,25 @@ def response(flow):
             comma_loc = v_clean.rfind(",")
 
             if ((comma_loc == -1 and semicolon_loc > -1)):
-                cookies = v_clean.split(";")
+                cookie_delim = ";"
             else:
-                cookies = v_clean.split(",")
+                cookie_delim = ","
+
+            cookies = v_clean.split(cookie_delim)
+
             for cookie in cookies:
                 (name, value) = unpack_cookie(cookie)
                 my_file.write(name + "\t" + value + "\t")
+                new_value = modify_cookie_value(corrupt_ga_client_id, value)
+                if (value != new_value):
+                    my_file.write(name + " (new value)" +
+                                  "\t" + new_value + "\t")
+                    new_cookies += name + cookie_delim + new_value
+                else:
+                    new_cookies += name + cookie_delim + value
+            if (cookies != new_cookies):
+                flow.request.headers["cookie"] = new_cookies
+
             my_file.write("\n")
 
     # blow away outbound cookies after logging attempted Cookie traffic
