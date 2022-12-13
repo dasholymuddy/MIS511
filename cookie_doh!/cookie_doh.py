@@ -29,14 +29,14 @@ flow = http.HTTPFlow
 # utility functions
 
 # corrupt Google Analytics Client IDs
-def modify_cookie_value(corrupt_ga_client_id, src):
+def modify_cookie_value(corrupt_ga_client_id, name, value):
     if (corrupt_ga_client_id):
 
-        new_str = ""
-        substrings = src.split(".")
+        new_value = ""
+        substrings = value.split(".")
 
-        # Google Analytics GA1 cookie
-        if (src[0:4] == "GA1."):
+        # Google Analytics _ga=GA1... cookie
+        if (name == " _ga" and value[0:4] == "GA1."):
             for substr in substrings:
                 if (len(substr) > 4):
                     new_substr = ""
@@ -45,18 +45,18 @@ def modify_cookie_value(corrupt_ga_client_id, src):
                             new_substr += str(random.randrange(0, 9, 1))
                         else:
                             new_substr += char
-                    new_str += new_substr
+                    new_value += new_substr
                 else:
-                    new_str += substr
-                new_str += "."
-            new_str = new_str[0:len(new_str)-1]
+                    new_value += substr
+                new_value += "."
+            new_value = new_value.rstrip("., ")
 
         # if not a recognized pattern, just pass the original value
         else:
-            new_str = src
-        return new_str
+            new_value = value
+        return new_value
     else:
-        return src
+        return (value)
 
 
 # unpack cookie data; we need to handle cases where cookies aren't RFC 6265 compliant
@@ -175,15 +175,15 @@ def response(flow):
             for cookie in cookies:
                 (name, value) = unpack_cookie(cookie)
                 my_file.write(name + "\t" + value + "\t")
-                new_value = modify_cookie_value(corrupt_ga_client_id, value)
+                new_value = modify_cookie_value(corrupt_ga_client_id, name, value)
                 if (value != new_value):
                     my_file.write(name + " (new value)" +
                                   "\t" + new_value + "\t")
-                    new_cookies += name + cookie_delim + new_value
+                    new_cookies += name + "=" + new_value + cookie_delim
                 else:
-                    new_cookies += name + cookie_delim + value
+                    new_cookies += name + "=" + value + cookie_delim
             if (cookies != new_cookies):
-                flow.request.headers["cookie"] = new_cookies
+                flow.request.headers["cookie"] = new_cookies.rstrip(", ")
 
             my_file.write("\n")
 
