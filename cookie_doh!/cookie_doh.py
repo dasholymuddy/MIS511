@@ -189,8 +189,9 @@ def response(flow):
                     new_cookies += name + "=" + new_value + cookie_delim
                 else:
                     new_cookies += name + "=" + value + cookie_delim
+            new_cookies = new_cookies.rstrip(", ")
             if (cookies != new_cookies):
-                flow.request.headers["cookie"] = new_cookies.rstrip(", ")
+                flow.request.headers["cookie"] = new_cookies
 
             my_file.write("\n")
 
