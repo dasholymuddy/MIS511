@@ -9,9 +9,9 @@ import random
 allow_cookies = True
 
 # configurable variable: corrupt_ga_client_id
-# set corrupt_ga_client_id to True to randomly alter cookies values that look like Google Analytics Client IDs
+# set corrupt_ga_client_id to True to alter cookie values that look like Google Analytics Client IDs
 # set corrupt_ga_client_id to False to pass Google Analytics Client IDs without modification (Default)
-corrupt_ga_client_id = False
+corrupt_ga_client_id = True
 
 
 # file logging config elements
@@ -51,6 +51,9 @@ def modify_cookie_value(corrupt_ga_client_id, name, value):
                 new_value += "."
             new_value = new_value.rstrip("., ")
 
+        # other cookie patterns TBD
+        elif(1==0):
+            pass
         # if not a recognized pattern, just pass the original value
         else:
             new_value = value
@@ -96,8 +99,6 @@ def clean_cookies(cookies):
 
     return clean_cookies
 
-# clean out messy data that creates errors
-
 
 # set-cookie values may have \n and commas in the expires-date, so we need to handle those conditions for better logging
 def clean_set_cookies(cookies):
@@ -125,6 +126,20 @@ def clean_set_cookies(cookies):
     return clean_cookies
 
 
+# split out name value pairs for each cookie per RFC 6265; arbitrary numbers of cookies and pairs
+# identify if ; or , split cookies; some cookies are not RFC compliant.
+def find_cookie_delim(cookie_jar_value):
+    semicolon_loc = cookie_jar_value.rfind(";")
+    comma_loc = cookie_jar_value.rfind(",")
+
+    if ((comma_loc == -1 and semicolon_loc > -1)):
+        cookie_delim = ";"
+    else:
+        cookie_delim = ","
+
+    return cookie_delim
+
+
 # close the file when flow is done
 def done():
     my_file.close()
@@ -136,7 +151,7 @@ def response(flow):
     the_date = dt.strftime("%m/%d/%Y")
     the_time = dt.strftime("%H:%M:%S")
 
-    # set up metadata lot record with each entry
+    # set up metadata record for each log entry
     metadata = the_date + "\t"
     metadata += the_time + "\t"
     metadata += flow.request.url + "\t"
@@ -160,15 +175,7 @@ def response(flow):
             # write cookie name and raw cookie value
             my_file.write(k.upper() + "\t" + v_clean + "\t")
 
-            # split out name value pairs for each cookie per RFC 6265; arbitrary numbers of cookies and pairs
-            # identify if ; or , split cookies; some cookies are not RFC compliant.
-            semicolon_loc = v_clean.rfind(";")
-            comma_loc = v_clean.rfind(",")
-
-            if ((comma_loc == -1 and semicolon_loc > -1)):
-                cookie_delim = ";"
-            else:
-                cookie_delim = ","
+            cookie_delim = find_cookie_delim(v_clean)
 
             cookies = v_clean.split(cookie_delim)
 
@@ -189,7 +196,7 @@ def response(flow):
 
     # blow away outbound cookies after logging attempted Cookie traffic
     if (not allow_cookies):
-        flow.request.headers.set_all("Cookie", "")
+        flow.request.headers.set_all("cookie", "")
 
     # parse the response headers (from server to client)
     for k, v in flow.response.headers.items():
