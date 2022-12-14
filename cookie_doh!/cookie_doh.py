@@ -11,7 +11,7 @@ allow_cookies = True
 # configurable variable: corrupt_ga_client_id
 # set corrupt_ga_client_id to True to alter cookie values that look like Google Analytics Client IDs
 # set corrupt_ga_client_id to False to pass Google Analytics Client IDs without modification (Default)
-corrupt_ga_client_id = True
+corrupt_ga_client_id = False
 
 
 # file logging config elements
