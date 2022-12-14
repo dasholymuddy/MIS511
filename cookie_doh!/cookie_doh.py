@@ -28,6 +28,62 @@ flow = http.HTTPFlow
 
 # utility functions
 
+# handle double-click pixel tracker
+# add a function to handle these, and call it from request
+# https://stats.g.doubleclick.net/j/collect
+# ?t=dc
+# &aip=1
+# &_r=3
+# &v=1
+# &_v=j98
+# &tid=UA-121785700-1
+# &cid=444357169.1662670361
+# &jid=1571182493
+# &uid=4
+# &gjid=1407041247
+# &_gid=264372301.1670956247
+# &_u=SCCAAEIqAAAAACgCIAB~
+# &z=308421432
+def modify_doubleclick_tracker(corrupt_ga_client_id, host, url, ga_client_id, new_ga_client_id):
+
+    return url
+
+# handle google ads audiences pixel tracker
+# add a function to handle these, and call it from request
+# https://www.google.com/ads/ga-audiences
+# ?t=sr
+# &aip=1 # same
+# &_r=4 # same possibly as uid=4
+# &slf_rd=1
+# &v=1 # same
+# &_v=j98 # same
+# &tid=UA-121785700-1 # same (UA identifier)
+# &cid=444357169.1662670361 # same (ga cid)
+# &jid=1571182493 # same
+# &_u=SCCAAEIqAAAAACgCIAB~ # same
+# &z=485372858
+
+
+def modify_ga_audiences_tracker(corrupt_ga_client_id, host, url, ga_client_id, new_ga_client_id):
+
+    return url
+
+# modify long strings of numbers randomly
+
+
+def corrupt_string(substr):
+    new_substr = ""
+    if (len(substr) > 4):
+        for char in substr:
+            if (char.isdigit()):
+                new_substr += str(random.randrange(0, 9, 1))
+            else:
+                new_substr += char
+    else:
+        new_substr = substr
+    return new_substr
+
+
 # corrupt Google Analytics Client IDs
 def modify_cookie_value(corrupt_ga_client_id, name, value):
     if (corrupt_ga_client_id):
@@ -160,6 +216,11 @@ def response(flow):
     metadata += flow.request.method + "\t"
     metadata += flow.request.path + "\t"
     metadata += flow.request.http_version + "\t"
+
+    # parse query to handle query based trackers
+    if (flow.request.host == "www.google.com"):
+        print("path: " + flow.request.path)
+        print(flow.request.query)
 
     # parse the request headers (from client to server)
     for k, v in flow.request.headers.items():
