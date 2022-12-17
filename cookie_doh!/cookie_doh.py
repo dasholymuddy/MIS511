@@ -11,7 +11,7 @@ allow_cookies = True
 # configurable variable: corrupt_ga_client_id
 # set corrupt_ga_client_id to True to alter cookie values that look like Google Analytics Client IDs
 # set corrupt_ga_client_id to False to pass Google Analytics Client IDs without modification (Default)
-corrupt_ga_client_id = True
+corrupt_ga_client_id = False
 
 
 # file logging config elements
@@ -19,7 +19,7 @@ log_path = "header_log.txt"
 my_file = open(log_path, "w")
 my_file.write("Date" + "\t" + "Time" + "\t" + "URL" + "\t" + "Host" +
               "\t" + "Port" + "\t" + "Request Method" + "\t" + "Path" +
-              "\t" + "Query" + "\t" + "Outbound Query" + 
+              "\t" + "Query" + "\t" + "Outbound Query" +
               "\t" + "HTTP Version" + "\t" + "Type" + "\t" + "Allow Cookies" +
               "\t" + "Corrupt GA Cookies" + "\t" + "Header" + "\t" + "Content" + "\n")
 
@@ -31,20 +31,20 @@ flow = http.HTTPFlow
 
 # handle double-click pixel tracker
 def modify_doubleclick_tracker(corrupt_ga_client_id, path, query):
-    if(corrupt_ga_client_id and len(path) > 9 and path[0:10] == "/j/collect"):
+    if (corrupt_ga_client_id and len(path) > 9 and path[0:10] == "/j/collect"):
         corrupt_keys = ("tid", "cid", "jid", "gjid", "_gid", "_u", "z")
         for q in corrupt_keys:
-            if(q in query.keys()):
+            if (q in query.keys()):
                 query[q] = corrupt_string(query[q])
     return query
 
 
 # handle google ads audiences pixel tracker
 def modify_ga_audiences_tracker(corrupt_ga_client_id, path, query):
-    if(corrupt_ga_client_id and len(path) > 16 and path[0:17] == "/ads/ga-audiences"):
+    if (corrupt_ga_client_id and len(path) > 16 and path[0:17] == "/ads/ga-audiences"):
         corrupt_keys = ("tid", "cid", "jid", "_u", "z")
         for q in corrupt_keys:
-            if(q in query.keys()):
+            if (q in query.keys()):
                 query[q] = corrupt_string(query[q])
     return query
 
@@ -56,7 +56,7 @@ def corrupt_string(substr):
         for char in substr:
             if (char.isdigit()):
                 new_substr += str(random.randint(0, 9))
-            elif(char.isalpha() and char not in ("X, Y, Z, x, y, z")):
+            elif (char.isalpha() and char not in ("X, Y, Z, x, y, z")):
                 new_substr += str(chr(ord(char) + random.randint(1, 3)))
             else:
                 new_substr += char
@@ -89,7 +89,7 @@ def modify_cookie_value(corrupt_ga_client_id, name, value):
             new_value = new_value.rstrip("., ")
 
         # other cookie patterns TBD
-        elif(1==0):
+        elif (1 == 0):
             pass
         # if not a recognized pattern, just pass the original value
         else:
@@ -191,9 +191,11 @@ def response(flow):
 
     # parse query to handle query based trackers
     if (flow.request.host == "www.google.com"):
-        new_query = modify_ga_audiences_tracker(corrupt_ga_client_id, flow.request.path, flow.request.query)
-    elif(flow.request.host == "stats.g.doubleclick.net"):
-        new_query = modify_doubleclick_tracker(corrupt_ga_client_id, flow.request.path, flow.request.query)
+        new_query = modify_ga_audiences_tracker(
+            corrupt_ga_client_id, flow.request.path, flow.request.query)
+    elif (flow.request.host == "stats.g.doubleclick.net"):
+        new_query = modify_doubleclick_tracker(
+            corrupt_ga_client_id, flow.request.path, flow.request.query)
     else:
         new_query = {}
 
@@ -205,16 +207,15 @@ def response(flow):
     metadata += str(flow.request.port) + "\t"
     metadata += flow.request.method + "\t"
     metadata += flow.request.path + "\t"
-    if(len(old_query) > 0):
-        metadata += str(old_query) + "\t" 
+    if (len(old_query) > 0):
+        metadata += str(old_query) + "\t"
     else:
         metadata += "" + "\t"
-    if(not (old_query == new_query) and len(new_query) > 0):
-        metadata += str(new_query) + "\t" 
+    if (not (old_query == new_query) and len(new_query) > 0):
+        metadata += str(new_query) + "\t"
     else:
         metadata += "" + "\t"
     metadata += flow.request.http_version + "\t"
-
 
     # parse the request headers (from client to server)
     for k, v in flow.request.headers.items():
@@ -237,7 +238,8 @@ def response(flow):
             for cookie in cookies:
                 (name, value) = unpack_cookie(cookie)
                 my_file.write(name + "\t" + value + "\t")
-                new_value = modify_cookie_value(corrupt_ga_client_id, name, value)
+                new_value = modify_cookie_value(
+                    corrupt_ga_client_id, name, value)
                 if (value != new_value):
                     my_file.write(name + " (new value)" +
                                   "\t" + new_value + "\t")
